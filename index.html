@@ -1138,7 +1138,10 @@ const DB = {
 };
 
 // ===================== UTILS =====================
-const today = () => new Date().toISOString().split('T')[0];
+const today = () => {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+};
 const fmt = (n) => 'R$ ' + Number(n).toFixed(2).replace('.', ',');
 const fmtKm = (n) => Number(n).toFixed(1) + ' km';
 const fmtMin = (m) => {
@@ -1184,25 +1187,64 @@ function showTab(id) {
 // ===================== MODALS =====================
 let selectedApp = 'uber';
 let selectedCat = 'fuel';
+let editingRideId = null;
+let editingExpenseId = null;
 
 function openModal(id) {
   // set defaults
   if (id === 'rideModal') {
+    editingRideId = null;
+    document.querySelector('#rideModal .modal-title').textContent = 'Nova Corrida';
     document.getElementById('ride-date').value = today();
     document.getElementById('ride-value').value = '';
     document.getElementById('ride-km').value = '';
     document.getElementById('ride-duration').value = '';
     document.getElementById('ride-start').value = new Date().toTimeString().slice(0,5);
     document.getElementById('ride-note').value = '';
-    selectApp(selectedApp);
+    selectApp('uber');
   }
   if (id === 'expenseModal') {
+    editingExpenseId = null;
+    document.querySelector('#expenseModal .modal-title').textContent = 'Novo Gasto';
     document.getElementById('expense-date').value = today();
     document.getElementById('expense-value').value = '';
     document.getElementById('expense-desc').value = '';
-    selectCat(document.querySelector('#cat-chips .chip.active'), selectedCat);
+    selectedCat = 'fuel';
+    document.querySelectorAll('#cat-chips .chip').forEach(c => c.classList.remove('active'));
+    document.querySelector('#cat-chips .chip').classList.add('active');
   }
   document.getElementById(id).classList.add('open');
+}
+
+function editRide(id) {
+  const r = DB.rides().find(x => x.id === id);
+  if (!r) return;
+  editingRideId = id;
+  document.querySelector('#rideModal .modal-title').textContent = 'Editar Corrida';
+  document.getElementById('ride-date').value = r.date;
+  document.getElementById('ride-value').value = r.value;
+  document.getElementById('ride-km').value = r.km || '';
+  document.getElementById('ride-duration').value = r.duration || '';
+  document.getElementById('ride-start').value = r.start || '';
+  document.getElementById('ride-note').value = r.note || '';
+  selectApp(r.app);
+  document.getElementById('rideModal').classList.add('open');
+}
+
+function editExpense(id) {
+  const e = DB.expenses().find(x => x.id === id);
+  if (!e) return;
+  editingExpenseId = id;
+  document.querySelector('#expenseModal .modal-title').textContent = 'Editar Gasto';
+  document.getElementById('expense-date').value = e.date;
+  document.getElementById('expense-value').value = e.value;
+  document.getElementById('expense-desc').value = e.desc || '';
+  selectedCat = e.category;
+  document.querySelectorAll('#cat-chips .chip').forEach(c => c.classList.remove('active'));
+  document.querySelectorAll('#cat-chips .chip').forEach(c => {
+    if (c.getAttribute('onclick')?.includes("'" + e.category + "'")) c.classList.add('active');
+  });
+  document.getElementById('expenseModal').classList.add('open');
 }
 
 function closeModal(id) {
@@ -1239,14 +1281,17 @@ function saveRide() {
     return;
   }
 
-  const rides = DB.rides();
-  rides.push({
-    id: Date.now(),
-    date, app: selectedApp, value, km, duration, start, note
-  });
+  let rides = DB.rides();
+  if (editingRideId) {
+    rides = rides.map(r => r.id === editingRideId ? { ...r, date, app: selectedApp, value, km, duration, start, note } : r);
+    showToast('Corrida atualizada!');
+  } else {
+    rides.push({ id: Date.now(), date, app: selectedApp, value, km, duration, start, note });
+    showToast('Corrida salva!');
+  }
   DB.set('mr_rides', rides);
+  editingRideId = null;
   closeModal('rideModal');
-  showToast('Corrida salva!');
   renderToday();
   renderRides();
 }
@@ -1291,8 +1336,9 @@ function renderRides() {
           <span>📅 ${r.date}</span>
         </div>
       </div>
-      <div style="display:flex;align-items:center;gap:10px;">
+      <div style="display:flex;align-items:center;gap:8px;">
         <div class="ride-item-value">${fmt(r.value)}</div>
+        <button class="btn btn-ghost" style="padding:6px 10px;font-size:12px;" onclick="editRide(${r.id})">✏️</button>
         <button class="btn btn-danger" onclick="deleteRide(${r.id})">✕</button>
       </div>
     </div>
@@ -1318,11 +1364,17 @@ function saveExpense() {
     return;
   }
 
-  const expenses = DB.expenses();
-  expenses.push({ id: Date.now(), date, category: selectedCat, value, desc });
+  let expenses = DB.expenses();
+  if (editingExpenseId) {
+    expenses = expenses.map(e => e.id === editingExpenseId ? { ...e, date, category: selectedCat, value, desc } : e);
+    showToast('Gasto atualizado!');
+  } else {
+    expenses.push({ id: Date.now(), date, category: selectedCat, value, desc });
+    showToast('Gasto salvo!');
+  }
   DB.set('mr_expenses', expenses);
+  editingExpenseId = null;
   closeModal('expenseModal');
-  showToast('Gasto salvo!');
   renderToday(); renderExpenses();
 }
 
@@ -1359,8 +1411,9 @@ function renderExpenses() {
         <div class="expense-desc">${e.desc || c.label}</div>
         <div class="expense-cat">${c.label} · ${e.date}</div>
       </div>
-      <div style="display:flex;align-items:center;gap:10px;">
+      <div style="display:flex;align-items:center;gap:8px;">
         <div class="expense-val">- ${fmt(e.value)}</div>
+        <button class="btn btn-ghost" style="padding:6px 10px;font-size:12px;" onclick="editExpense(${e.id})">✏️</button>
         <button class="btn btn-danger" onclick="deleteExpense(${e.id})">✕</button>
       </div>
     </div>`;
@@ -1466,6 +1519,7 @@ function addGoal() {
   document.getElementById('goal-target').value = '';
   showToast('Meta salva!');
   renderGoals();
+  renderToday();
 }
 
 function deleteGoal(id) {
@@ -1499,19 +1553,18 @@ function renderGoals() {
         : r.reduce((s,x)=>s+(x.duration||0),0)/60;
     } else if (g.period === 'weekly') {
       const now = new Date();
-      const weekStart = new Date(now);
-      weekStart.setDate(now.getDate() - now.getDay());
-      const r = rides.filter(x => new Date(x.date) >= weekStart);
+      const start = new Date(now);
+      start.setDate(now.getDate() - now.getDay());
+      const weekStartStr = start.getFullYear() + '-' + String(start.getMonth()+1).padStart(2,'0') + '-' + String(start.getDate()).padStart(2,'0');
+      const r = rides.filter(x => x.date >= weekStartStr);
       current = g.metric === 'ganho' ? r.reduce((s,x)=>s+x.value,0)
         : g.metric === 'corridas' ? r.length
         : g.metric === 'km' ? r.reduce((s,x)=>s+(x.km||0),0)
         : r.reduce((s,x)=>s+(x.duration||0),0)/60;
     } else {
       const now = new Date();
-      const r = rides.filter(x => {
-        const rd = new Date(x.date);
-        return rd.getMonth() === now.getMonth() && rd.getFullYear() === now.getFullYear();
-      });
+      const yearMonth = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+      const r = rides.filter(x => x.date.startsWith(yearMonth));
       current = g.metric === 'ganho' ? r.reduce((s,x)=>s+x.value,0)
         : g.metric === 'corridas' ? r.length
         : g.metric === 'km' ? r.reduce((s,x)=>s+(x.km||0),0)
@@ -1567,6 +1620,13 @@ function loadJournalForDate() {
   document.getElementById('journal-cons').value = j ? j.cons : '';
 }
 
+function deleteJournal(date) {
+  if (!confirm('Remover o diário deste dia?')) return;
+  DB.set('mr_journals', DB.journals().filter(j => j.date !== date));
+  renderJournalHistory();
+  showToast('Entrada removida.', 'error');
+}
+
 function renderJournalHistory() {
   const journals = DB.journals().sort((a,b) => b.date.localeCompare(a.date)).slice(0, 10);
   const el = document.getElementById('journal-history');
@@ -1578,7 +1638,10 @@ function renderJournalHistory() {
     <div class="card" style="margin-bottom:10px;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
         <strong style="font-size:14px;">${new Date(j.date + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'short', year: 'numeric' })}</strong>
-        <button class="btn btn-ghost" style="padding:4px 10px;font-size:12px;" onclick="document.getElementById('journal-date').value='${j.date}';loadJournalForDate();">Carregar</button>
+        <div style="display:flex;gap:6px;">
+          <button class="btn btn-ghost" style="padding:4px 10px;font-size:12px;" onclick="document.getElementById('journal-date').value='${j.date}';loadJournalForDate();document.querySelector('.tabs .tab-btn:nth-child(5)').scrollIntoView();">✏️ Editar</button>
+          <button class="btn btn-danger" onclick="deleteJournal('${j.date}')">✕</button>
+        </div>
       </div>
       ${j.summary ? '<p style="font-size:13px;color:var(--text-muted);margin-bottom:8px;">' + j.summary + '</p>' : ''}
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;">
@@ -1611,10 +1674,10 @@ function getFilteredData() {
   } else if (currentFilter === 'week') {
     const start = new Date(now);
     start.setDate(now.getDate() - now.getDay());
-    fromDate = start.toISOString().split('T')[0];
+    fromDate = start.getFullYear() + '-' + String(start.getMonth()+1).padStart(2,'0') + '-' + String(start.getDate()).padStart(2,'0');
     toDate = today();
   } else if (currentFilter === 'month') {
-    fromDate = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+    fromDate = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-01';
     toDate = today();
   } else if (currentFilter === 'all') {
     fromDate = '2000-01-01'; toDate = '2099-12-31';
