@@ -1,0 +1,1721 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MotoRun Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --uber: #000000;
+    --uber-light: #1a1a1a;
+    --99: #F5C800;
+    --99-dark: #c9a200;
+    --bg: #0d0d0f;
+    --surface: #141416;
+    --surface2: #1c1c1f;
+    --surface3: #242428;
+    --border: #2a2a2e;
+    --text: #f0f0f0;
+    --text-muted: #7a7a85;
+    --text-dim: #4a4a55;
+    --green: #22c55e;
+    --red: #ef4444;
+    --blue: #3b82f6;
+    --orange: #f97316;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* HEADER */
+  .top-bar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 56px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 26px;
+    letter-spacing: 2px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .logo span { color: var(--99); }
+  .logo small {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 11px;
+    font-weight: 300;
+    color: var(--text-muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    border-left: 1px solid var(--border);
+    padding-left: 10px;
+    margin-left: 4px;
+  }
+
+  .top-bar-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .moto-badge {
+    background: var(--surface3);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 12px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .moto-badge::before { content: '🏍️'; font-size: 14px; }
+
+  #current-date-display {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  /* TABS */
+  .tabs {
+    display: flex;
+    gap: 2px;
+    padding: 16px 24px 0;
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+  }
+  .tab-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 10px 18px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active {
+    color: var(--99);
+    border-bottom-color: var(--99);
+  }
+
+  /* CONTENT */
+  .tab-content { display: none; padding: 24px; max-width: 1200px; margin: 0 auto; }
+  .tab-content.active { display: block; }
+
+  /* CARDS GRID */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .grid-auto { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+
+  @media (max-width: 768px) {
+    .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr 1fr; }
+    .grid-4 .span-2 { grid-column: span 2; }
+  }
+  @media (max-width: 480px) {
+    .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .card-title {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--text-muted);
+  }
+
+  /* METRIC CARDS */
+  .metric-value {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 42px;
+    line-height: 1;
+    letter-spacing: 1px;
+  }
+  .metric-value.green { color: var(--green); }
+  .metric-value.yellow { color: var(--99); }
+  .metric-value.blue { color: var(--blue); }
+  .metric-value.orange { color: var(--orange); }
+  .metric-sub {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+
+  /* APP BADGES */
+  .badge-uber {
+    background: #000;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 4px;
+    letter-spacing: 1px;
+  }
+  .badge-99 {
+    background: var(--99);
+    color: #000;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 4px;
+    letter-spacing: 1px;
+  }
+  .badge-both {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+  }
+
+  /* FORMS */
+  .form-group {
+    margin-bottom: 14px;
+  }
+  .form-label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+  }
+  .form-input, .form-select, .form-textarea {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .form-input:focus, .form-select:focus, .form-textarea:focus {
+    border-color: var(--99);
+  }
+  .form-select option { background: var(--surface2); }
+  .form-textarea { resize: vertical; min-height: 80px; }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .form-row-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+  }
+
+  /* BUTTONS */
+  .btn {
+    border: none;
+    border-radius: 8px;
+    padding: 11px 20px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn-primary {
+    background: var(--99);
+    color: #000;
+  }
+  .btn-primary:hover { background: var(--99-dark); }
+  .btn-uber {
+    background: #fff;
+    color: #000;
+  }
+  .btn-uber:hover { background: #e0e0e0; }
+  .btn-ghost {
+    background: var(--surface3);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-ghost:hover { border-color: var(--text-muted); }
+  .btn-danger {
+    background: transparent;
+    color: var(--red);
+    border: 1px solid var(--red);
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+  .btn-danger:hover { background: var(--red); color: #fff; }
+  .btn-full { width: 100%; justify-content: center; }
+
+  /* APP SELECTOR */
+  .app-selector {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .app-option {
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s;
+    background: var(--surface2);
+  }
+  .app-option:hover { border-color: var(--text-muted); }
+  .app-option.selected-uber { border-color: #fff; background: #000; }
+  .app-option.selected-99 { border-color: var(--99); background: rgba(245,200,0,0.1); }
+  .app-option-name {
+    font-weight: 700;
+    font-size: 15px;
+    margin-top: 4px;
+  }
+  .app-option.selected-uber .app-option-name { color: #fff; }
+  .app-option.selected-99 .app-option-name { color: var(--99); }
+  .app-option-icon { font-size: 20px; }
+
+  /* TIMER SECTION */
+  .timer-section {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    justify-content: space-between;
+  }
+  .timer-display {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 28px;
+    font-weight: 600;
+    color: var(--99);
+    letter-spacing: 2px;
+  }
+  .timer-controls { display: flex; gap: 8px; }
+  .btn-timer {
+    background: var(--surface3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 7px 14px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-timer:hover { background: var(--surface); border-color: var(--99); color: var(--99); }
+  .btn-timer.running { background: var(--red); color: #fff; border-color: var(--red); }
+
+  /* RIDE LIST */
+  .ride-item {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    transition: border-color 0.2s;
+  }
+  .ride-item:hover { border-color: var(--text-dim); }
+  .ride-item-app { flex-shrink: 0; }
+  .ride-item-info { flex: 1; min-width: 0; }
+  .ride-item-title {
+    font-size: 14px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .ride-item-meta {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 2px;
+    display: flex;
+    gap: 12px;
+  }
+  .ride-item-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--green);
+    flex-shrink: 0;
+  }
+
+  /* EXPENSE LIST */
+  .expense-item {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .expense-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+  .expense-icon.fuel { background: rgba(249,115,22,0.15); }
+  .expense-icon.food { background: rgba(34,197,94,0.15); }
+  .expense-icon.maintenance { background: rgba(59,130,246,0.15); }
+  .expense-icon.market { background: rgba(168,85,247,0.15); }
+  .expense-icon.other { background: rgba(156,163,175,0.15); }
+  .expense-info { flex: 1; }
+  .expense-desc { font-size: 13px; font-weight: 500; }
+  .expense-cat { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .expense-val {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--red);
+  }
+
+  /* PROGRESS BAR */
+  .progress-wrap {
+    background: var(--surface3);
+    border-radius: 6px;
+    height: 8px;
+    margin-top: 8px;
+    overflow: hidden;
+  }
+  .progress-bar {
+    height: 100%;
+    border-radius: 6px;
+    transition: width 0.4s ease;
+  }
+  .progress-bar.green { background: var(--green); }
+  .progress-bar.yellow { background: var(--99); }
+  .progress-bar.orange { background: var(--orange); }
+  .progress-bar.red { background: var(--red); }
+
+  /* SPLIT CARD */
+  .split-card {
+    display: grid;
+    grid-template-columns: 1fr 1px 1fr;
+    gap: 0;
+  }
+  .split-divider { background: var(--border); margin: 8px 0; }
+  .split-side { padding: 4px 16px; }
+  .split-side:first-child { padding-left: 0; }
+  .split-side:last-child { padding-right: 0; }
+
+  /* JOURNAL */
+  .journal-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .journal-box {
+    background: var(--surface2);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .journal-box-header {
+    padding: 10px 16px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .journal-box.pros .journal-box-header { background: rgba(34,197,94,0.15); color: var(--green); }
+  .journal-box.cons .journal-box-header { background: rgba(239,68,68,0.15); color: var(--red); }
+  .journal-box textarea {
+    width: 100%;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    padding: 12px 16px;
+    resize: none;
+    min-height: 120px;
+    line-height: 1.6;
+  }
+
+  /* REPORT SECTION */
+  .report-filter {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .filter-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 6px 16px;
+    color: var(--text-muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .filter-btn:hover, .filter-btn.active {
+    background: var(--99);
+    color: #000;
+    border-color: var(--99);
+    font-weight: 600;
+  }
+
+  /* STAT COMPARISON */
+  .app-comparison {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .app-stat-card {
+    border-radius: 10px;
+    padding: 16px;
+  }
+  .app-stat-card.uber { background: #000; border: 1px solid #333; }
+  .app-stat-card.n99 { background: rgba(245,200,0,0.08); border: 1px solid rgba(245,200,0,0.3); }
+  .app-stat-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.6; margin-bottom: 6px; }
+  .app-stat-val { font-family: 'JetBrains Mono', monospace; font-size: 22px; font-weight: 600; }
+  .app-stat-card.uber .app-stat-val { color: #fff; }
+  .app-stat-card.n99 .app-stat-val { color: var(--99); }
+  .app-stat-sub { font-size: 12px; opacity: 0.5; margin-top: 4px; }
+
+  /* SECTION TITLE */
+  .section-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 2px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text);
+  }
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* DIVIDER */
+  .divider { height: 1px; background: var(--border); margin: 20px 0; }
+
+  /* EMPTY STATE */
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-muted);
+  }
+  .empty-state .icon { font-size: 40px; margin-bottom: 10px; opacity: 0.5; }
+  .empty-state p { font-size: 13px; }
+
+  /* GOAL ITEM */
+  .goal-item {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 10px;
+  }
+  .goal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+  }
+  .goal-name { font-size: 14px; font-weight: 500; }
+  .goal-period {
+    font-size: 11px;
+    color: var(--text-muted);
+    background: var(--surface3);
+    padding: 2px 8px;
+    border-radius: 10px;
+  }
+  .goal-progress-text {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+  }
+  .goal-progress-text span:last-child {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text);
+  }
+
+  /* LIVE CLOCK */
+  .live-clock {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text-muted);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 4px 10px;
+    border-radius: 6px;
+  }
+
+  /* TOAST */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 18px;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transform: translateY(100px);
+    opacity: 0;
+    transition: all 0.3s ease;
+    z-index: 9999;
+    max-width: 280px;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.success { border-color: var(--green); }
+  .toast.error { border-color: var(--red); }
+
+  /* SUMMARY ROW */
+  .summary-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+  .summary-pill {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .summary-pill strong { color: var(--99); font-family: 'JetBrains Mono', monospace; }
+
+  /* date input color fix */
+  input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* Modal / overlay para adicionar corrida */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 200;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.2s;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    width: 90%;
+    max-width: 480px;
+    max-height: 90vh;
+    overflow-y: auto;
+    transform: translateY(20px);
+    transition: transform 0.2s;
+  }
+  .modal-overlay.open .modal { transform: translateY(0); }
+  .modal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  .modal-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px;
+    letter-spacing: 2px;
+  }
+  .btn-close {
+    background: var(--surface3);
+    border: none;
+    border-radius: 6px;
+    width: 30px; height: 30px;
+    color: var(--text-muted);
+    font-size: 16px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .chip-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+  .chip {
+    background: var(--surface3);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .chip:hover, .chip.active { background: var(--99); color: #000; border-color: var(--99); font-weight: 600; }
+
+  .colorsep { width: 4px; height: 24px; border-radius: 2px; flex-shrink: 0; }
+  .colorsep.uber { background: #fff; }
+  .colorsep.n99 { background: var(--99); }
+
+  /* net income display */
+  .net-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-top: 16px;
+  }
+  .net-label {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    font-weight: 600;
+  }
+  .net-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 24px;
+    font-weight: 600;
+  }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="top-bar">
+  <div class="logo">MOTO<span>RUN</span><small>Dashboard</small></div>
+  <div class="top-bar-right">
+    <div class="moto-badge">Titan KS 150 2008</div>
+    <div class="live-clock" id="liveClock">--:--:--</div>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <button class="tab-btn active" onclick="showTab('hoje')">📊 Hoje</button>
+  <button class="tab-btn" onclick="showTab('corridas')">🛵 Corridas</button>
+  <button class="tab-btn" onclick="showTab('gastos')">💸 Gastos</button>
+  <button class="tab-btn" onclick="showTab('metas')">🎯 Metas</button>
+  <button class="tab-btn" onclick="showTab('diario')">📝 Diário</button>
+  <button class="tab-btn" onclick="showTab('relatorio')">📈 Relatório</button>
+</div>
+
+<!-- ============ ABA HOJE ============ -->
+<div id="tab-hoje" class="tab-content active">
+  <div id="today-summary-row" class="summary-row"></div>
+
+  <div class="grid-4">
+    <div class="card">
+      <div class="card-title">Ganho Total</div>
+      <div class="metric-value green" id="m-ganho">R$ 0,00</div>
+      <div class="metric-sub" id="m-ganho-sub">0 corridas hoje</div>
+    </div>
+    <div class="card">
+      <div class="card-title">KM Rodados</div>
+      <div class="metric-value blue" id="m-km">0,0 km</div>
+      <div class="metric-sub" id="m-km-sub">R$/km: —</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Tempo em Pista</div>
+      <div class="metric-value yellow" id="m-tempo">0h 0m</div>
+      <div class="metric-sub" id="m-tempo-sub">Acumulado do dia</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Gastos do Dia</div>
+      <div class="metric-value orange" id="m-gastos">R$ 0,00</div>
+      <div class="metric-sub" id="m-gastos-sub">0 lançamentos</div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="grid-2">
+    <div>
+      <div class="section-title">Por Plataforma</div>
+      <div class="app-comparison">
+        <div class="app-stat-card uber">
+          <div class="app-stat-label">Uber</div>
+          <div class="app-stat-val" id="stat-uber-val">R$ 0,00</div>
+          <div class="app-stat-sub" id="stat-uber-rides">0 corridas</div>
+        </div>
+        <div class="app-stat-card n99">
+          <div class="app-stat-label">99</div>
+          <div class="app-stat-val" id="stat-99-val">R$ 0,00</div>
+          <div class="app-stat-sub" id="stat-99-rides">0 corridas</div>
+        </div>
+      </div>
+      <div class="net-row">
+        <div>
+          <div class="net-label">Lucro Líquido</div>
+          <div class="metric-sub">Ganhos menos gastos do dia</div>
+        </div>
+        <div class="net-value" id="m-liquido">R$ 0,00</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-title">Ações Rápidas</div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <button class="btn btn-primary btn-full" style="font-size:15px;padding:14px;" onclick="openModal('rideModal')">
+          ＋ Adicionar Corrida
+        </button>
+        <button class="btn btn-ghost btn-full" onclick="openModal('expenseModal')">
+          ＋ Adicionar Gasto
+        </button>
+        <button class="btn btn-ghost btn-full" onclick="showTab('relatorio')">
+          📈 Ver Relatório
+        </button>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="card-title" style="margin-bottom:10px;">Meta Diária</div>
+      <div id="today-goal-area">
+        <div class="empty-state" style="padding:20px 0">
+          <div class="icon">🎯</div>
+          <p>Nenhuma meta diária definida.<br>Configure na aba Metas.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ ABA CORRIDAS ============ -->
+<div id="tab-corridas" class="tab-content">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+    <div class="section-title" style="margin-bottom:0;flex:1">Corridas Registradas</div>
+    <div style="display:flex;gap:8px;">
+      <input type="date" class="form-input" id="ride-filter-date" style="width:160px;" onchange="renderRides()">
+      <button class="btn btn-primary" onclick="openModal('rideModal')">＋ Corrida</button>
+    </div>
+  </div>
+
+  <div id="rides-list">
+    <div class="empty-state">
+      <div class="icon">🛵</div>
+      <p>Nenhuma corrida registrada.<br>Adicione sua primeira corrida!</p>
+    </div>
+  </div>
+</div>
+
+<!-- ============ ABA GASTOS ============ -->
+<div id="tab-gastos" class="tab-content">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+    <div class="section-title" style="margin-bottom:0;flex:1">Gastos Registrados</div>
+    <div style="display:flex;gap:8px;">
+      <input type="date" class="form-input" id="expense-filter-date" style="width:160px;" onchange="renderExpenses()">
+      <button class="btn btn-primary" onclick="openModal('expenseModal')">＋ Gasto</button>
+    </div>
+  </div>
+  <div id="expenses-list">
+    <div class="empty-state">
+      <div class="icon">💸</div>
+      <p>Nenhum gasto registrado.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ============ ABA METAS ============ -->
+<div id="tab-metas" class="tab-content">
+  <div class="grid-2">
+    <div>
+      <div class="section-title">Adicionar Meta</div>
+      <div class="card">
+        <div class="form-group">
+          <label class="form-label">Nome da Meta</label>
+          <input type="text" class="form-input" id="goal-name" placeholder="Ex: Ganhar R$ 200/dia">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Tipo</label>
+            <select class="form-select" id="goal-metric">
+              <option value="ganho">Ganho (R$)</option>
+              <option value="corridas">Corridas (qtd)</option>
+              <option value="km">Quilômetros</option>
+              <option value="horas">Horas trabalhadas</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Período</label>
+            <select class="form-select" id="goal-period">
+              <option value="daily">Diário</option>
+              <option value="weekly">Semanal</option>
+              <option value="monthly">Mensal</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Valor Alvo</label>
+          <input type="number" class="form-input" id="goal-target" placeholder="Ex: 200">
+        </div>
+        <button class="btn btn-primary btn-full" onclick="addGoal()">Salvar Meta</button>
+      </div>
+    </div>
+    <div>
+      <div class="section-title">Minhas Metas</div>
+      <div id="goals-list">
+        <div class="empty-state">
+          <div class="icon">🎯</div>
+          <p>Nenhuma meta cadastrada.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ ABA DIÁRIO ============ -->
+<div id="tab-diario" class="tab-content">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+    <div class="section-title" style="margin-bottom:0">Diário do Dia</div>
+    <input type="date" class="form-input" id="journal-date" style="width:170px;">
+  </div>
+  <div class="card" style="margin-bottom:16px;">
+    <div class="form-group" style="margin-bottom:0">
+      <label class="form-label">Resumo geral do dia</label>
+      <textarea class="form-textarea" id="journal-summary" placeholder="Como foi o dia no geral? Trânsito, clima, humor..."></textarea>
+    </div>
+  </div>
+  <div class="journal-section">
+    <div class="journal-box pros">
+      <div class="journal-box-header">✅ Pontos Positivos</div>
+      <textarea id="journal-pros" placeholder="O que deu certo? Boa região, corridas longas, bom atendimento..."></textarea>
+    </div>
+    <div class="journal-box cons">
+      <div class="journal-box-header">❌ Pontos Negativos</div>
+      <textarea id="journal-cons" placeholder="O que deu errado? Cancelamentos, trânsito ruim, problema na moto..."></textarea>
+    </div>
+  </div>
+  <div style="margin-top:14px;display:flex;gap:10px;">
+    <button class="btn btn-primary" onclick="saveJournal()">💾 Salvar Diário</button>
+    <button class="btn btn-ghost" onclick="loadJournalForDate()">🔄 Carregar</button>
+  </div>
+  <div class="divider"></div>
+  <div class="section-title">Entradas Anteriores</div>
+  <div id="journal-history"></div>
+</div>
+
+<!-- ============ ABA RELATÓRIO ============ -->
+<div id="tab-relatorio" class="tab-content">
+  <div class="report-filter">
+    <span style="font-size:13px;color:var(--text-muted);margin-right:4px;">Período:</span>
+    <button class="filter-btn active" onclick="setFilter('today',this)">Hoje</button>
+    <button class="filter-btn" onclick="setFilter('week',this)">Esta Semana</button>
+    <button class="filter-btn" onclick="setFilter('month',this)">Este Mês</button>
+    <button class="filter-btn" onclick="setFilter('all',this)">Tudo</button>
+    <input type="date" class="form-input" id="report-from" style="width:150px;" onchange="setFilter('custom',null)">
+    <input type="date" class="form-input" id="report-to" style="width:150px;" onchange="setFilter('custom',null)">
+  </div>
+
+  <div class="grid-4">
+    <div class="card">
+      <div class="card-title">Total Ganho</div>
+      <div class="metric-value green" id="r-ganho">R$ 0,00</div>
+      <div class="metric-sub" id="r-ganho-sub"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Total KM</div>
+      <div class="metric-value blue" id="r-km">0 km</div>
+      <div class="metric-sub" id="r-km-sub"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Total Corridas</div>
+      <div class="metric-value yellow" id="r-corridas">0</div>
+      <div class="metric-sub" id="r-corridas-sub"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Total Gastos</div>
+      <div class="metric-value orange" id="r-gastos">R$ 0,00</div>
+      <div class="metric-sub" id="r-gastos-sub"></div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="grid-2">
+    <div>
+      <div class="section-title">Plataformas</div>
+      <div class="app-comparison">
+        <div class="app-stat-card uber">
+          <div class="app-stat-label">Uber</div>
+          <div class="app-stat-val" id="r-uber-val">R$ 0,00</div>
+          <div class="app-stat-sub" id="r-uber-rides">0 corridas</div>
+        </div>
+        <div class="app-stat-card n99">
+          <div class="app-stat-label">99</div>
+          <div class="app-stat-val" id="r-99-val">R$ 0,00</div>
+          <div class="app-stat-sub" id="r-99-rides">0 corridas</div>
+        </div>
+      </div>
+      <div class="net-row" style="margin-top:12px;">
+        <div>
+          <div class="net-label">Lucro Líquido</div>
+          <div class="metric-sub" id="r-liq-sub">Ganhos menos gastos</div>
+        </div>
+        <div class="net-value" id="r-liquido">R$ 0,00</div>
+      </div>
+    </div>
+    <div>
+      <div class="section-title">Gastos por Categoria</div>
+      <div id="r-expense-breakdown"></div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+  <div class="section-title">Corridas do Período</div>
+  <div id="r-rides-list"></div>
+</div>
+
+<!-- MODAL: ADICIONAR CORRIDA -->
+<div class="modal-overlay" id="rideModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Nova Corrida</div>
+      <button class="btn-close" onclick="closeModal('rideModal')">✕</button>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Plataforma</label>
+      <div class="app-selector">
+        <div class="app-option" id="opt-uber" onclick="selectApp('uber')">
+          <div class="app-option-icon">⚫</div>
+          <div class="app-option-name">UBER</div>
+        </div>
+        <div class="app-option" id="opt-99" onclick="selectApp('99')">
+          <div class="app-option-icon">🟡</div>
+          <div class="app-option-name">99</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Data</label>
+        <input type="date" class="form-input" id="ride-date">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Valor (R$)</label>
+        <input type="number" class="form-input" id="ride-value" placeholder="0,00" step="0.01">
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Km rodados</label>
+        <input type="number" class="form-input" id="ride-km" placeholder="0" step="0.1">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Duração (min)</label>
+        <input type="number" class="form-input" id="ride-duration" placeholder="0">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Horário de Início</label>
+      <input type="time" class="form-input" id="ride-start">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Observação (opcional)</label>
+      <input type="text" class="form-input" id="ride-note" placeholder="Corrida longa, gorjeta, etc.">
+    </div>
+
+    <button class="btn btn-primary btn-full" style="margin-top:6px;" onclick="saveRide()">Salvar Corrida</button>
+  </div>
+</div>
+
+<!-- MODAL: ADICIONAR GASTO -->
+<div class="modal-overlay" id="expenseModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Novo Gasto</div>
+      <button class="btn-close" onclick="closeModal('expenseModal')">✕</button>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Categoria</label>
+      <div class="chip-row" id="cat-chips">
+        <div class="chip active" onclick="selectCat(this,'fuel')">⛽ Combustível</div>
+        <div class="chip" onclick="selectCat(this,'food')">🍔 Alimentação</div>
+        <div class="chip" onclick="selectCat(this,'maintenance')">🔧 Manutenção</div>
+        <div class="chip" onclick="selectCat(this,'market')">🛒 Mercado</div>
+        <div class="chip" onclick="selectCat(this,'other')">📦 Outro</div>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Data</label>
+        <input type="date" class="form-input" id="expense-date">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Valor (R$)</label>
+        <input type="number" class="form-input" id="expense-value" placeholder="0,00" step="0.01">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Descrição</label>
+      <input type="text" class="form-input" id="expense-desc" placeholder="Ex: Gasolina posto X, lanche, óleo...">
+    </div>
+
+    <button class="btn btn-primary btn-full" style="margin-top:6px;" onclick="saveExpense()">Salvar Gasto</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ===================== DATA LAYER =====================
+const DB = {
+  get: (key) => JSON.parse(localStorage.getItem(key) || '[]'),
+  set: (key, val) => localStorage.setItem(key, JSON.stringify(val)),
+  rides: () => DB.get('mr_rides'),
+  expenses: () => DB.get('mr_expenses'),
+  goals: () => DB.get('mr_goals'),
+  journals: () => DB.get('mr_journals'),
+};
+
+// ===================== UTILS =====================
+const today = () => new Date().toISOString().split('T')[0];
+const fmt = (n) => 'R$ ' + Number(n).toFixed(2).replace('.', ',');
+const fmtKm = (n) => Number(n).toFixed(1) + ' km';
+const fmtMin = (m) => {
+  m = Number(m);
+  if (m < 60) return m + ' min';
+  return Math.floor(m/60) + 'h ' + (m%60) + 'm';
+};
+
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  t.textContent = (type==='success'?'✅ ':'❌ ') + msg;
+  t.className = 'toast show ' + type;
+  setTimeout(() => t.className = 'toast', 2500);
+}
+
+// ===================== CLOCK =====================
+function updateClock() {
+  const now = new Date();
+  document.getElementById('liveClock').textContent =
+    now.toLocaleTimeString('pt-BR');
+  document.getElementById('current-date-display') &&
+    (document.getElementById('current-date-display').textContent = now.toLocaleDateString('pt-BR'));
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ===================== TABS =====================
+function showTab(id) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(b => {
+    if (b.getAttribute('onclick')?.includes("'" + id + "'")) b.classList.add('active');
+  });
+  if (id === 'hoje') renderToday();
+  if (id === 'corridas') renderRides();
+  if (id === 'gastos') renderExpenses();
+  if (id === 'metas') renderGoals();
+  if (id === 'diario') { renderJournalHistory(); loadJournalForDate(); }
+  if (id === 'relatorio') renderReport();
+}
+
+// ===================== MODALS =====================
+let selectedApp = 'uber';
+let selectedCat = 'fuel';
+
+function openModal(id) {
+  // set defaults
+  if (id === 'rideModal') {
+    document.getElementById('ride-date').value = today();
+    document.getElementById('ride-value').value = '';
+    document.getElementById('ride-km').value = '';
+    document.getElementById('ride-duration').value = '';
+    document.getElementById('ride-start').value = new Date().toTimeString().slice(0,5);
+    document.getElementById('ride-note').value = '';
+    selectApp(selectedApp);
+  }
+  if (id === 'expenseModal') {
+    document.getElementById('expense-date').value = today();
+    document.getElementById('expense-value').value = '';
+    document.getElementById('expense-desc').value = '';
+    selectCat(document.querySelector('#cat-chips .chip.active'), selectedCat);
+  }
+  document.getElementById(id).classList.add('open');
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+document.querySelectorAll('.modal-overlay').forEach(o => {
+  o.addEventListener('click', e => { if (e.target === o) closeModal(o.id); });
+});
+
+function selectApp(app) {
+  selectedApp = app;
+  document.getElementById('opt-uber').className = 'app-option' + (app==='uber'?' selected-uber':'');
+  document.getElementById('opt-99').className = 'app-option' + (app==='99'?' selected-99':'');
+}
+
+function selectCat(el, cat) {
+  selectedCat = cat;
+  document.querySelectorAll('#cat-chips .chip').forEach(c => c.classList.remove('active'));
+  if (el) el.classList.add('active');
+}
+
+// ===================== RIDES =====================
+function saveRide() {
+  const date = document.getElementById('ride-date').value;
+  const value = parseFloat(document.getElementById('ride-value').value);
+  const km = parseFloat(document.getElementById('ride-km').value) || 0;
+  const duration = parseInt(document.getElementById('ride-duration').value) || 0;
+  const start = document.getElementById('ride-start').value;
+  const note = document.getElementById('ride-note').value;
+
+  if (!date || !value || value <= 0) {
+    showToast('Preencha data e valor!', 'error');
+    return;
+  }
+
+  const rides = DB.rides();
+  rides.push({
+    id: Date.now(),
+    date, app: selectedApp, value, km, duration, start, note
+  });
+  DB.set('mr_rides', rides);
+  closeModal('rideModal');
+  showToast('Corrida salva!');
+  renderToday();
+  renderRides();
+}
+
+function deleteRide(id) {
+  if (!confirm('Remover esta corrida?')) return;
+  DB.set('mr_rides', DB.rides().filter(r => r.id !== id));
+  renderToday(); renderRides();
+  showToast('Corrida removida.', 'error');
+}
+
+function renderRides() {
+  const filterDate = document.getElementById('ride-filter-date')?.value || '';
+  let rides = DB.rides();
+  if (filterDate) rides = rides.filter(r => r.date === filterDate);
+  else {
+    const d = today();
+    rides = rides.filter(r => r.date === d);
+    const el = document.getElementById('ride-filter-date');
+    if (el && !el.value) el.value = d;
+  }
+
+  rides.sort((a,b) => b.id - a.id);
+  const el = document.getElementById('rides-list');
+  if (!rides.length) {
+    el.innerHTML = '<div class="empty-state"><div class="icon">🛵</div><p>Nenhuma corrida neste dia.</p></div>';
+    return;
+  }
+  el.innerHTML = rides.map(r => `
+    <div class="ride-item">
+      <div class="ride-item-app">
+        ${r.app === 'uber' ? '<span class="badge-uber">UBER</span>' : '<span class="badge-99">99</span>'}
+      </div>
+      <div class="ride-item-info">
+        <div class="ride-item-title">
+          ${r.start ? r.start : ''}
+          ${r.note ? '<span style="color:var(--text-muted);font-size:12px;">' + r.note + '</span>' : ''}
+        </div>
+        <div class="ride-item-meta">
+          <span>📍 ${r.km ? r.km + ' km' : '—'}</span>
+          <span>⏱ ${r.duration ? fmtMin(r.duration) : '—'}</span>
+          <span>📅 ${r.date}</span>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="ride-item-value">${fmt(r.value)}</div>
+        <button class="btn btn-danger" onclick="deleteRide(${r.id})">✕</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ===================== EXPENSES =====================
+const catInfo = {
+  fuel: { icon: '⛽', label: 'Combustível' },
+  food: { icon: '🍔', label: 'Alimentação' },
+  maintenance: { icon: '🔧', label: 'Manutenção' },
+  market: { icon: '🛒', label: 'Mercado' },
+  other: { icon: '📦', label: 'Outro' },
+};
+
+function saveExpense() {
+  const date = document.getElementById('expense-date').value;
+  const value = parseFloat(document.getElementById('expense-value').value);
+  const desc = document.getElementById('expense-desc').value;
+
+  if (!date || !value || value <= 0) {
+    showToast('Preencha data e valor!', 'error');
+    return;
+  }
+
+  const expenses = DB.expenses();
+  expenses.push({ id: Date.now(), date, category: selectedCat, value, desc });
+  DB.set('mr_expenses', expenses);
+  closeModal('expenseModal');
+  showToast('Gasto salvo!');
+  renderToday(); renderExpenses();
+}
+
+function deleteExpense(id) {
+  if (!confirm('Remover este gasto?')) return;
+  DB.set('mr_expenses', DB.expenses().filter(e => e.id !== id));
+  renderToday(); renderExpenses();
+  showToast('Gasto removido.', 'error');
+}
+
+function renderExpenses() {
+  const filterDate = document.getElementById('expense-filter-date')?.value || '';
+  let expenses = DB.expenses();
+  if (filterDate) expenses = expenses.filter(e => e.date === filterDate);
+  else {
+    const d = today();
+    expenses = expenses.filter(e => e.date === d);
+    const el = document.getElementById('expense-filter-date');
+    if (el && !el.value) el.value = d;
+  }
+
+  expenses.sort((a,b) => b.id - a.id);
+  const el = document.getElementById('expenses-list');
+  if (!expenses.length) {
+    el.innerHTML = '<div class="empty-state"><div class="icon">💸</div><p>Nenhum gasto neste dia.</p></div>';
+    return;
+  }
+  el.innerHTML = expenses.map(e => {
+    const c = catInfo[e.category] || catInfo.other;
+    return `
+    <div class="expense-item">
+      <div class="expense-icon ${e.category}">${c.icon}</div>
+      <div class="expense-info">
+        <div class="expense-desc">${e.desc || c.label}</div>
+        <div class="expense-cat">${c.label} · ${e.date}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="expense-val">- ${fmt(e.value)}</div>
+        <button class="btn btn-danger" onclick="deleteExpense(${e.id})">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ===================== TODAY =====================
+function renderToday() {
+  const d = today();
+  const rides = DB.rides().filter(r => r.date === d);
+  const expenses = DB.expenses().filter(e => e.date === d);
+
+  const totalGanho = rides.reduce((s, r) => s + r.value, 0);
+  const totalKm = rides.reduce((s, r) => s + (r.km || 0), 0);
+  const totalMin = rides.reduce((s, r) => s + (r.duration || 0), 0);
+  const totalGastos = expenses.reduce((s, e) => s + e.value, 0);
+
+  const uberRides = rides.filter(r => r.app === 'uber');
+  const n99Rides = rides.filter(r => r.app === '99');
+  const uberTotal = uberRides.reduce((s,r)=>s+r.value,0);
+  const n99Total = n99Rides.reduce((s,r)=>s+r.value,0);
+
+  document.getElementById('m-ganho').textContent = fmt(totalGanho);
+  document.getElementById('m-ganho-sub').textContent = rides.length + ' corrida' + (rides.length !== 1 ? 's' : '') + ' hoje';
+  document.getElementById('m-km').textContent = fmtKm(totalKm);
+  document.getElementById('m-km-sub').textContent = totalKm > 0 ? 'R$/km: ' + (totalGanho/totalKm).toFixed(2).replace('.',',') : 'R$/km: —';
+  document.getElementById('m-tempo').textContent = fmtMin(totalMin);
+  document.getElementById('m-tempo-sub').textContent = 'Acumulado do dia';
+  document.getElementById('m-gastos').textContent = fmt(totalGastos);
+  document.getElementById('m-gastos-sub').textContent = expenses.length + ' lançamento' + (expenses.length !== 1 ? 's' : '');
+
+  document.getElementById('stat-uber-val').textContent = fmt(uberTotal);
+  document.getElementById('stat-uber-rides').textContent = uberRides.length + ' corrida' + (uberRides.length !== 1 ? 's' : '');
+  document.getElementById('stat-99-val').textContent = fmt(n99Total);
+  document.getElementById('stat-99-rides').textContent = n99Rides.length + ' corrida' + (n99Rides.length !== 1 ? 's' : '');
+
+  const liquido = totalGanho - totalGastos;
+  const liqEl = document.getElementById('m-liquido');
+  liqEl.textContent = fmt(liquido);
+  liqEl.style.color = liquido >= 0 ? 'var(--green)' : 'var(--red)';
+
+  // summary pills
+  const srEl = document.getElementById('today-summary-row');
+  const dayName = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'short' });
+  srEl.innerHTML = `
+    <div class="summary-pill">📅 ${dayName}</div>
+    <div class="summary-pill">🛵 <strong>${rides.length}</strong> corridas</div>
+    <div class="summary-pill">💰 <strong>${fmt(totalGanho)}</strong> ganho</div>
+    <div class="summary-pill">⛽ <strong>${fmt(totalGastos)}</strong> gasto</div>
+    <div class="summary-pill">📍 <strong>${fmtKm(totalKm)}</strong></div>
+  `;
+
+  // goal area
+  renderTodayGoal(totalGanho, rides.length, totalKm, totalMin);
+}
+
+function renderTodayGoal(ganho, corridas, km, minutos) {
+  const goals = DB.goals().filter(g => g.period === 'daily');
+  const el = document.getElementById('today-goal-area');
+  if (!goals.length) {
+    el.innerHTML = '<div class="empty-state" style="padding:20px 0"><div class="icon">🎯</div><p>Sem meta diária. Configure na aba Metas.</p></div>';
+    return;
+  }
+  el.innerHTML = goals.map(g => {
+    let current = g.metric === 'ganho' ? ganho
+      : g.metric === 'corridas' ? corridas
+      : g.metric === 'km' ? km
+      : minutos / 60;
+    const pct = Math.min(100, (current / g.target) * 100);
+    const color = pct >= 100 ? 'green' : pct >= 60 ? 'yellow' : pct >= 30 ? 'orange' : 'red';
+    const unitLabel = g.metric === 'ganho' ? fmt(current) : g.metric === 'km' ? fmtKm(current) : g.metric === 'horas' ? current.toFixed(1)+'h' : current;
+    const targetLabel = g.metric === 'ganho' ? fmt(g.target) : g.metric === 'km' ? fmtKm(g.target) : g.metric === 'horas' ? g.target+'h' : g.target;
+    return `
+    <div class="goal-item" style="margin-bottom:8px;">
+      <div class="goal-header">
+        <div class="goal-name">${g.name}</div>
+        <div style="font-size:11px;color:var(--text-muted);background:var(--surface3);padding:2px 8px;border-radius:10px;">Diária</div>
+      </div>
+      <div class="goal-progress-text">
+        <span>${pct.toFixed(0)}% concluído</span>
+        <span>${unitLabel} / ${targetLabel}</span>
+      </div>
+      <div class="progress-wrap"><div class="progress-bar ${color}" style="width:${pct}%"></div></div>
+    </div>`;
+  }).join('');
+}
+
+// ===================== GOALS =====================
+function addGoal() {
+  const name = document.getElementById('goal-name').value.trim();
+  const metric = document.getElementById('goal-metric').value;
+  const period = document.getElementById('goal-period').value;
+  const target = parseFloat(document.getElementById('goal-target').value);
+
+  if (!name || !target || target <= 0) {
+    showToast('Preencha nome e valor alvo!', 'error');
+    return;
+  }
+  const goals = DB.goals();
+  goals.push({ id: Date.now(), name, metric, period, target });
+  DB.set('mr_goals', goals);
+  document.getElementById('goal-name').value = '';
+  document.getElementById('goal-target').value = '';
+  showToast('Meta salva!');
+  renderGoals();
+}
+
+function deleteGoal(id) {
+  if (!confirm('Remover esta meta?')) return;
+  DB.set('mr_goals', DB.goals().filter(g => g.id !== id));
+  renderGoals();
+  showToast('Meta removida.', 'error');
+}
+
+function renderGoals() {
+  const goals = DB.goals();
+  const el = document.getElementById('goals-list');
+  if (!goals.length) {
+    el.innerHTML = '<div class="empty-state"><div class="icon">🎯</div><p>Nenhuma meta cadastrada.</p></div>';
+    return;
+  }
+
+  const rides = DB.rides();
+  const expenses = DB.expenses();
+  const d = today();
+  const todayRides = rides.filter(r => r.date === d);
+
+  const periodLabels = { daily: 'Diária', weekly: 'Semanal', monthly: 'Mensal' };
+  el.innerHTML = goals.map(g => {
+    let current = 0;
+    if (g.period === 'daily') {
+      const r = todayRides;
+      current = g.metric === 'ganho' ? r.reduce((s,x)=>s+x.value,0)
+        : g.metric === 'corridas' ? r.length
+        : g.metric === 'km' ? r.reduce((s,x)=>s+(x.km||0),0)
+        : r.reduce((s,x)=>s+(x.duration||0),0)/60;
+    } else if (g.period === 'weekly') {
+      const now = new Date();
+      const weekStart = new Date(now);
+      weekStart.setDate(now.getDate() - now.getDay());
+      const r = rides.filter(x => new Date(x.date) >= weekStart);
+      current = g.metric === 'ganho' ? r.reduce((s,x)=>s+x.value,0)
+        : g.metric === 'corridas' ? r.length
+        : g.metric === 'km' ? r.reduce((s,x)=>s+(x.km||0),0)
+        : r.reduce((s,x)=>s+(x.duration||0),0)/60;
+    } else {
+      const now = new Date();
+      const r = rides.filter(x => {
+        const rd = new Date(x.date);
+        return rd.getMonth() === now.getMonth() && rd.getFullYear() === now.getFullYear();
+      });
+      current = g.metric === 'ganho' ? r.reduce((s,x)=>s+x.value,0)
+        : g.metric === 'corridas' ? r.length
+        : g.metric === 'km' ? r.reduce((s,x)=>s+(x.km||0),0)
+        : r.reduce((s,x)=>s+(x.duration||0),0)/60;
+    }
+    const pct = Math.min(100, (current / g.target) * 100);
+    const color = pct >= 100 ? 'green' : pct >= 60 ? 'yellow' : pct >= 30 ? 'orange' : 'red';
+    const unitLabel = g.metric === 'ganho' ? fmt(current) : g.metric === 'km' ? fmtKm(current) : g.metric === 'horas' ? current.toFixed(1)+'h' : Math.round(current);
+    const targetLabel = g.metric === 'ganho' ? fmt(g.target) : g.metric === 'km' ? fmtKm(g.target) : g.metric === 'horas' ? g.target+'h' : g.target;
+
+    return `
+    <div class="goal-item">
+      <div class="goal-header">
+        <div class="goal-name">${g.name}</div>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <div style="font-size:11px;color:var(--text-muted);background:var(--surface3);padding:2px 8px;border-radius:10px;">${periodLabels[g.period]}</div>
+          <button class="btn btn-danger" onclick="deleteGoal(${g.id})">✕</button>
+        </div>
+      </div>
+      <div class="goal-progress-text">
+        <span>${pct.toFixed(0)}% concluído</span>
+        <span>${unitLabel} / ${targetLabel}</span>
+      </div>
+      <div class="progress-wrap"><div class="progress-bar ${color}" style="width:${pct}%"></div></div>
+    </div>`;
+  }).join('');
+}
+
+// ===================== JOURNAL =====================
+function initJournalDate() {
+  const el = document.getElementById('journal-date');
+  if (el) el.value = today();
+}
+
+function saveJournal() {
+  const date = document.getElementById('journal-date').value || today();
+  const summary = document.getElementById('journal-summary').value;
+  const pros = document.getElementById('journal-pros').value;
+  const cons = document.getElementById('journal-cons').value;
+
+  const journals = DB.journals().filter(j => j.date !== date);
+  journals.push({ id: Date.now(), date, summary, pros, cons });
+  DB.set('mr_journals', journals);
+  showToast('Diário salvo!');
+  renderJournalHistory();
+}
+
+function loadJournalForDate() {
+  const date = document.getElementById('journal-date')?.value || today();
+  const j = DB.journals().find(x => x.date === date);
+  document.getElementById('journal-summary').value = j ? j.summary : '';
+  document.getElementById('journal-pros').value = j ? j.pros : '';
+  document.getElementById('journal-cons').value = j ? j.cons : '';
+}
+
+function renderJournalHistory() {
+  const journals = DB.journals().sort((a,b) => b.date.localeCompare(a.date)).slice(0, 10);
+  const el = document.getElementById('journal-history');
+  if (!journals.length) {
+    el.innerHTML = '<div class="empty-state"><div class="icon">📝</div><p>Nenhuma entrada salva.</p></div>';
+    return;
+  }
+  el.innerHTML = journals.map(j => `
+    <div class="card" style="margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <strong style="font-size:14px;">${new Date(j.date + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'short', year: 'numeric' })}</strong>
+        <button class="btn btn-ghost" style="padding:4px 10px;font-size:12px;" onclick="document.getElementById('journal-date').value='${j.date}';loadJournalForDate();">Carregar</button>
+      </div>
+      ${j.summary ? '<p style="font-size:13px;color:var(--text-muted);margin-bottom:8px;">' + j.summary + '</p>' : ''}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;">
+        ${j.pros ? '<div style="background:rgba(34,197,94,0.08);border-radius:6px;padding:8px;"><strong style="color:var(--green);">✅ Prós</strong><p style="color:var(--text-muted);margin-top:4px;">' + j.pros + '</p></div>' : ''}
+        ${j.cons ? '<div style="background:rgba(239,68,68,0.08);border-radius:6px;padding:8px;"><strong style="color:var(--red);">❌ Contras</strong><p style="color:var(--text-muted);margin-top:4px;">' + j.cons + '</p></div>' : ''}
+      </div>
+    </div>
+  `).join('');
+}
+
+// ===================== REPORT =====================
+let currentFilter = 'today';
+
+function setFilter(type, btn) {
+  currentFilter = type;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderReport();
+}
+
+function getFilteredData() {
+  const allRides = DB.rides();
+  const allExpenses = DB.expenses();
+  const now = new Date();
+
+  let fromDate, toDate;
+
+  if (currentFilter === 'today') {
+    fromDate = toDate = today();
+  } else if (currentFilter === 'week') {
+    const start = new Date(now);
+    start.setDate(now.getDate() - now.getDay());
+    fromDate = start.toISOString().split('T')[0];
+    toDate = today();
+  } else if (currentFilter === 'month') {
+    fromDate = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+    toDate = today();
+  } else if (currentFilter === 'all') {
+    fromDate = '2000-01-01'; toDate = '2099-12-31';
+  } else {
+    fromDate = document.getElementById('report-from').value || '2000-01-01';
+    toDate = document.getElementById('report-to').value || '2099-12-31';
+  }
+
+  return {
+    rides: allRides.filter(r => r.date >= fromDate && r.date <= toDate),
+    expenses: allExpenses.filter(e => e.date >= fromDate && e.date <= toDate),
+  };
+}
+
+function renderReport() {
+  const { rides, expenses } = getFilteredData();
+  const totalGanho = rides.reduce((s,r) => s+r.value, 0);
+  const totalKm = rides.reduce((s,r) => s+(r.km||0), 0);
+  const totalGastos = expenses.reduce((s,e) => s+e.value, 0);
+  const uberRides = rides.filter(r => r.app === 'uber');
+  const n99Rides = rides.filter(r => r.app === '99');
+  const uberTotal = uberRides.reduce((s,r)=>s+r.value,0);
+  const n99Total = n99Rides.reduce((s,r)=>s+r.value,0);
+  const liquido = totalGanho - totalGastos;
+
+  document.getElementById('r-ganho').textContent = fmt(totalGanho);
+  document.getElementById('r-ganho-sub').textContent = rides.length + ' corridas';
+  document.getElementById('r-km').textContent = fmtKm(totalKm);
+  document.getElementById('r-km-sub').textContent = totalKm > 0 ? 'R$/km: ' + (totalGanho/totalKm).toFixed(2) : '';
+  document.getElementById('r-corridas').textContent = rides.length;
+  document.getElementById('r-corridas-sub').textContent = 'Uber: ' + uberRides.length + ' · 99: ' + n99Rides.length;
+  document.getElementById('r-gastos').textContent = fmt(totalGastos);
+  document.getElementById('r-gastos-sub').textContent = expenses.length + ' lançamentos';
+
+  document.getElementById('r-uber-val').textContent = fmt(uberTotal);
+  document.getElementById('r-uber-rides').textContent = uberRides.length + ' corridas';
+  document.getElementById('r-99-val').textContent = fmt(n99Total);
+  document.getElementById('r-99-rides').textContent = n99Rides.length + ' corridas';
+
+  const liqEl = document.getElementById('r-liquido');
+  liqEl.textContent = fmt(liquido);
+  liqEl.style.color = liquido >= 0 ? 'var(--green)' : 'var(--red)';
+  document.getElementById('r-liq-sub').textContent = 'Margem: ' + (totalGanho > 0 ? ((liquido/totalGanho)*100).toFixed(1) + '%' : '—');
+
+  // breakdown by category
+  const breakdown = {};
+  expenses.forEach(e => {
+    breakdown[e.category] = (breakdown[e.category] || 0) + e.value;
+  });
+  const bEl = document.getElementById('r-expense-breakdown');
+  if (!Object.keys(breakdown).length) {
+    bEl.innerHTML = '<div class="empty-state" style="padding:20px 0"><p>Sem gastos neste período.</p></div>';
+  } else {
+    bEl.innerHTML = Object.entries(breakdown).sort((a,b)=>b[1]-a[1]).map(([cat, val]) => {
+      const c = catInfo[cat] || catInfo.other;
+      const pct = (val / totalGastos) * 100;
+      return `
+      <div style="margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+          <span style="font-size:13px;">${c.icon} ${c.label}</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--red);">${fmt(val)}</span>
+        </div>
+        <div class="progress-wrap" style="height:5px;">
+          <div class="progress-bar orange" style="width:${pct}%"></div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // rides list
+  const sortedRides = [...rides].sort((a,b) => b.date.localeCompare(a.date) || b.id - a.id).slice(0, 50);
+  const rListEl = document.getElementById('r-rides-list');
+  if (!sortedRides.length) {
+    rListEl.innerHTML = '<div class="empty-state"><div class="icon">🛵</div><p>Nenhuma corrida no período.</p></div>';
+  } else {
+    rListEl.innerHTML = sortedRides.map(r => `
+      <div class="ride-item">
+        <div class="ride-item-app">
+          ${r.app === 'uber' ? '<span class="badge-uber">UBER</span>' : '<span class="badge-99">99</span>'}
+        </div>
+        <div class="ride-item-info">
+          <div class="ride-item-title">${r.date} ${r.start ? '· ' + r.start : ''}</div>
+          <div class="ride-item-meta">
+            <span>📍 ${r.km ? r.km + ' km' : '—'}</span>
+            <span>⏱ ${r.duration ? fmtMin(r.duration) : '—'}</span>
+            ${r.note ? '<span style="color:var(--text-dim);">' + r.note + '</span>' : ''}
+          </div>
+        </div>
+        <div class="ride-item-value">${fmt(r.value)}</div>
+      </div>`).join('');
+  }
+}
+
+// ===================== INIT =====================
+document.getElementById('ride-filter-date').value = today();
+document.getElementById('expense-filter-date').value = today();
+initJournalDate();
+renderToday();
+selectApp('uber');
+
+document.getElementById('journal-date').addEventListener('change', loadJournalForDate);
+</script>
+</body>
+</html>
