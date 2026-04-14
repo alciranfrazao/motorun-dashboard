@@ -748,6 +748,10 @@
   <div class="logo">MOTO<span>RUN</span><small>Dashboard</small></div>
   <div class="top-bar-right">
     <div class="moto-badge">Titan KS 150 2008</div>
+    <div id="sync-status-badge" onclick="openModal('syncModal')" title="Clique para configurar sincronização" style="cursor:pointer;background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:4px 12px;font-size:12px;color:var(--text-muted);display:flex;align-items:center;gap:5px;">
+      <span id="sync-dot" style="width:7px;height:7px;border-radius:50%;background:var(--text-dim);display:inline-block;"></span>
+      <span id="sync-label">Sem sync</span>
+    </div>
     <div class="live-clock" id="liveClock">--:--:--</div>
   </div>
 </div>
@@ -826,6 +830,18 @@
         </button>
         <button class="btn btn-ghost btn-full" onclick="showTab('relatorio')">
           📈 Ver Relatório
+        </button>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <button class="btn btn-ghost btn-full" onclick="exportData()" title="Baixar backup JSON">
+            💾 Exportar
+          </button>
+          <button class="btn btn-ghost btn-full" onclick="document.getElementById('import-file').click()" title="Importar backup JSON">
+            📂 Importar
+          </button>
+        </div>
+        <input type="file" id="import-file" accept=".json" style="display:none;" onchange="importData(event)">
+        <button class="btn btn-ghost btn-full" onclick="openModal('syncModal')" style="font-size:12px;padding:8px;">
+          ☁️ Configurar Sincronização
         </button>
       </div>
 
@@ -1126,16 +1142,219 @@
 
 <div class="toast" id="toast"></div>
 
+<!-- MODAL: CONFIGURAR SYNC KEY -->
+<div class="modal-overlay" id="syncModal" style="z-index:300;">
+  <div class="modal" style="max-width:400px;">
+    <div class="modal-header">
+      <div class="modal-title">☁️ Sincronização</div>
+    </div>
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;line-height:1.6;">
+      Crie uma <strong style="color:var(--text);">chave pessoal</strong> para sincronizar seus dados entre dispositivos. Use a mesma chave em todos os aparelhos.<br><br>
+      <span style="color:var(--red);font-size:12px;">⚠️ Guarde bem essa chave. Quem tiver ela acessa seus dados.</span>
+    </p>
+    <div class="form-group">
+      <label class="form-label">Sua chave de acesso</label>
+      <input type="text" class="form-input" id="sync-key-input" placeholder="Ex: joao_moto_2024" autocomplete="off">
+    </div>
+    <div id="sync-key-status" style="font-size:12px;color:var(--text-muted);margin-bottom:12px;min-height:18px;"></div>
+    <button class="btn btn-primary btn-full" onclick="confirmSyncKey()">Confirmar e Sincronizar</button>
+    <button class="btn btn-ghost btn-full" style="margin-top:8px;" onclick="closeModal('syncModal')">Usar sem sincronização</button>
+  </div>
+</div>
+
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+
 <script>
-// ===================== DATA LAYER =====================
+// ===================== FIREBASE CONFIG =====================
+// Preencha com os dados do seu projeto Firebase
+// Acesse: console.firebase.google.com -> Configurações -> Seus apps -> SDK
+const FIREBASE_CONFIG = {
+  apiKey:            "COLE_AQUI",
+  authDomain:        "COLE_AQUI",
+  projectId:         "COLE_AQUI",
+  storageBucket:     "COLE_AQUI",
+  messagingSenderId: "COLE_AQUI",
+  appId:             "COLE_AQUI"
+};
+// =========================================================
+
+// ===================== DATA LAYER (localStorage) =====================
 const DB = {
   get: (key) => JSON.parse(localStorage.getItem(key) || '[]'),
-  set: (key, val) => localStorage.setItem(key, JSON.stringify(val)),
-  rides: () => DB.get('mr_rides'),
+  set: (key, val) => {
+    localStorage.setItem(key, JSON.stringify(val));
+    firebasePush(key.replace('mr_', ''), val);
+  },
+  rides:    () => DB.get('mr_rides'),
   expenses: () => DB.get('mr_expenses'),
-  goals: () => DB.get('mr_goals'),
+  goals:    () => DB.get('mr_goals'),
   journals: () => DB.get('mr_journals'),
 };
+
+// ===================== FIREBASE SYNC =====================
+let _firestore = null;
+let _syncKey = localStorage.getItem('mr_sync_key') || '';
+
+function isFirebaseConfigured() {
+  return FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.apiKey !== 'COLE_AQUI';
+}
+
+function setSyncStatus(state) {
+  const dot = document.getElementById('sync-dot');
+  const label = document.getElementById('sync-label');
+  if (!dot) return;
+  const states = {
+    ok:       { color: '#22c55e', text: 'Sincronizado' },
+    syncing:  { color: '#f5c800', text: 'Sincronizando...' },
+    error:    { color: '#ef4444', text: 'Erro sync' },
+    nokey:    { color: '#f97316', text: 'Sem chave' },
+    offline:  { color: '#7a7a85', text: 'Sem sync' },
+  };
+  const s = states[state] || states.offline;
+  dot.style.background = s.color;
+  label.textContent = s.text;
+}
+
+async function initFirebase() {
+  if (!isFirebaseConfigured()) {
+    setSyncStatus('offline');
+    return;
+  }
+  try {
+    if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+    _firestore = firebase.firestore();
+    if (_syncKey) {
+      await pullFromFirebase();
+    } else {
+      setSyncStatus('nokey');
+      // mostra modal na primeira vez
+      setTimeout(() => openModal('syncModal'), 800);
+    }
+  } catch(e) {
+    console.warn('Firebase init error:', e);
+    setSyncStatus('error');
+  }
+}
+
+async function pullFromFirebase() {
+  if (!_firestore || !_syncKey) return;
+  setSyncStatus('syncing');
+  try {
+    const collections = ['rides', 'expenses', 'goals', 'journals'];
+    for (const col of collections) {
+      const snap = await _firestore
+        .collection('motorun').doc(_syncKey)
+        .collection('data').doc(col).get();
+      if (snap.exists) {
+        localStorage.setItem('mr_' + col, JSON.stringify(snap.data().items || []));
+      }
+    }
+    setSyncStatus('ok');
+    renderToday();
+    const activeTab = document.querySelector('.tab-content.active')?.id?.replace('tab-','');
+    if (activeTab === 'corridas') renderRides();
+    if (activeTab === 'gastos') renderExpenses();
+    if (activeTab === 'metas') renderGoals();
+    if (activeTab === 'relatorio') renderReport();
+  } catch(e) {
+    console.warn('Pull error:', e);
+    setSyncStatus('error');
+  }
+}
+
+async function firebasePush(collection, data) {
+  if (!_firestore || !_syncKey) return;
+  setSyncStatus('syncing');
+  try {
+    await _firestore
+      .collection('motorun').doc(_syncKey)
+      .collection('data').doc(collection)
+      .set({ items: data, updatedAt: new Date().toISOString() });
+    setSyncStatus('ok');
+  } catch(e) {
+    console.warn('Push error:', e);
+    setSyncStatus('error');
+  }
+}
+
+async function confirmSyncKey() {
+  const input = document.getElementById('sync-key-input').value.trim();
+  const statusEl = document.getElementById('sync-key-status');
+  if (!input || input.length < 4) {
+    statusEl.textContent = '❌ Chave muito curta. Use pelo menos 4 caracteres.';
+    statusEl.style.color = 'var(--red)';
+    return;
+  }
+  if (!/^[a-zA-Z0-9_\-]+$/.test(input)) {
+    statusEl.textContent = '❌ Use apenas letras, números, _ ou -';
+    statusEl.style.color = 'var(--red)';
+    return;
+  }
+  statusEl.textContent = '🔄 Conectando...';
+  statusEl.style.color = 'var(--text-muted)';
+
+  const oldKey = _syncKey;
+  _syncKey = input;
+  localStorage.setItem('mr_sync_key', input);
+
+  if (!_firestore) {
+    try {
+      if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+      _firestore = firebase.firestore();
+    } catch(e) {
+      statusEl.textContent = '❌ Erro ao conectar Firebase. Verifique as chaves.';
+      statusEl.style.color = 'var(--red)';
+      _syncKey = oldKey;
+      return;
+    }
+  }
+
+  await pullFromFirebase();
+  closeModal('syncModal');
+  showToast('Sincronização ativada: ' + input);
+}
+
+// ===================== EXPORT / IMPORT =====================
+function exportData() {
+  const data = {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    rides:    DB.rides(),
+    expenses: DB.expenses(),
+    goals:    DB.goals(),
+    journals: DB.journals(),
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'motorun-backup-' + today() + '.json';
+  a.click();
+  showToast('Backup exportado!');
+}
+
+function importData(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!data.rides && !data.expenses) throw new Error('Formato inválido');
+      if (data.rides)    DB.set('mr_rides',    data.rides);
+      if (data.expenses) DB.set('mr_expenses', data.expenses);
+      if (data.goals)    DB.set('mr_goals',    data.goals);
+      if (data.journals) DB.set('mr_journals', data.journals);
+      showToast('Dados importados com sucesso!');
+      renderToday();
+    } catch(err) {
+      showToast('Arquivo inválido.', 'error');
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
 
 // ===================== UTILS =====================
 const today = () => {
@@ -1777,8 +1996,10 @@ document.getElementById('expense-filter-date').value = today();
 initJournalDate();
 renderToday();
 selectApp('uber');
-
 document.getElementById('journal-date').addEventListener('change', loadJournalForDate);
+
+// Inicia Firebase
+initFirebase();
 </script>
 </body>
 </html>
